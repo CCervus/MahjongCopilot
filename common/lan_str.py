@@ -66,7 +66,7 @@ class LanStr:
     RANDOM_DELAY_RANGE = "Base Delay Range (sec)"    
     GAME_LEVELS = ["Bronze", "Silver", "Gold", "Jade", "Throne"]
     GAME_MODES = ["4-P East","4-P South","3-P East","3-P South"]
-    MOUSE_RANDOM_MOVE = "Randomize Move"
+    AUTOMATIC_THOUGHT_STOP = "automatic thought stop (sec)"
     
     # Status
     MAIN_THREAD  = "Main Thread"
@@ -199,6 +199,7 @@ class LanStrZHS(LanStr):
     REPLY_EMOJI_CHANCE = "回复表情概率"
     
     RANDOM_DELAY_RANGE = "基础延迟随机范围(秒)"
+    AUTOMATIC_THOUGHT_STOP = "复杂情况随机停顿总时长（秒/局）"
     GAME_LEVELS = ["铜之间", "银之间", "金之间", "玉之间", "王座之间"]
     GAME_MODES = ["四人东","四人南","三人东","三人南"]
     MOUSE_RANDOM_MOVE = "鼠标移动随机化"

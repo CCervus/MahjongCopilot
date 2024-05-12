@@ -8,6 +8,7 @@
 
 from dataclasses import dataclass, field
 import time
+import math
 import random
 import threading
 from typing import Iterable, Iterator
@@ -16,7 +17,7 @@ from common.mj_helper import MjaiType, MSType, MJAI_TILES_19, MJAI_TILES_28, MJA
 from common.mj_helper import sort_mjai_tiles, cvt_ms2mjai
 from common.log_helper import LOGGER
 from common.settings import Settings
-from common.utils import UiState, GAME_MODES
+from common.utils import UiState, GAME_MODES, GameMode
 
 from .img_proc import ImgTemp, GameVisual
 from .browser import GameBrowser
@@ -292,6 +293,8 @@ class Automation:
         self.ui_state:UiState = UiState.NOT_RUNNING   # Where game UI is at. initially not running 
         
         self.last_emoji_time:float = 0.0        # timestamp of last emoji sent   
+        self.long_think_time_ = self.st.random_think_time_choice
+        self.pressure_:float = 1
     
     def is_running_execution(self):
         """ if task is still running"""
@@ -326,9 +329,51 @@ class Automation:
             return False       
             
         return True
+    
+    def calculate_pressure_updated(self, game_state:GameState):
         
-    def get_delay(self, mjai_action:dict, gi:GameInfo, subtract:float=0.0):
+        max_rank = 3
+        if game_state.game_mode == GameMode.MJ3P:
+            max_rank = 3
+        elif game_state.game_mode == GameMode.MJ4P:
+            max_rank = 4
+        # 计算自家与其他家的分数差距
+        scores = game_state.player_scores
+        differences = [score - scores[game_state.seat] for score in scores if score != scores[game_state.seat]]
+
+        # 确定自家的顺位（排名）
+        rank = sum(difference < 0 for difference in differences) + 1
+
+        # 计算自家与最高分的差距
+        max_score_difference = max(scores) - scores[0]
+
+        if max_score_difference == 0:
+            return 1
+
+        # 根据顺位和分数差距计算压力值
+        # 压力值在1到3之间，顺位越低，分数差距越大，压力值越高
+        pressure = 1 + 1 * (rank / max_rank) + 1 * (max_score_difference / (max(scores) - min(scores)))
+
+        # 确保压力值在1到3之间
+        pressure = max(1, min(3, pressure))
+
+        return pressure
+        
+    def get_delay(self, mjai_action:dict, gi:GameInfo, game_state:GameState=None):
         """ return the action initial delay based on action type and game info"""
+        subtract = 0
+        if game_state:
+            subtract = game_state.last_reaction_time
+            if game_state.is_new_round:
+                game_state.is_new_round = False
+                self.long_think_time_ = self.st.random_think_time_choice
+
+                self.pressure_ = self.calculate_pressure_updated(game_state)
+
+                LOGGER.info("--- SET PRESSURE : %f ---", self.pressure_)
+
+                # game_state.player_scores
+
         mjai_type = mjai_action['type']
         delay = random.uniform(self.st.delay_random_lower, self.st.delay_random_upper)    # base delay        
         if mjai_type == MjaiType.DAHAI:
@@ -337,9 +382,22 @@ class Automation:
                 delay += 4.5
                 
             extra_time:float = 0.0
+            long_extra_time:float = 0.0
+            
+            pai = mjai_action['pai']
+
+            if game_state:
+                entropy = mjai_action['entropy']
+                if not (pai in MJAI_TILES_19 or pai == gi.my_tsumohai) and mjai_action and entropy > 1.2 and self.long_think_time_ > 0:
+                    long_extra_time += entropy * self.pressure_ * random.choice([0.5,0.75, 1, 1.5]) * (1 + gi.n_other_reach() * 0.5) * self.st.random_think_time_choice / 5
+
+                    LOGGER.info("--- LONG THINK TIME : %f last long_think : %d ---", long_extra_time, self.long_think_time_)
+
+                    long_extra_time = min(long_extra_time, self.long_think_time_)
+
+                    delay += long_extra_time
             
             # more time for 19 < 28 < others
-            pai = mjai_action['pai']
             if pai in MJAI_TILES_19 or pai == gi.my_tsumohai :
                 extra_time += 0.0
             elif pai in MJAI_TILES_28:
@@ -366,6 +424,8 @@ class Automation:
         
         subtract = max(0, subtract-0.5)
         delay = max(0, delay-subtract)    # minimal delay =0
+        
+        self.long_think_time_ -= max(0, delay + subtract - 5)
         # LOGGER.debug("Subtract=%.2f, Delay=%.2f", subtract, delay)
         return delay
      
@@ -387,6 +447,7 @@ class Automation:
         assert gi is not None, "Game info is None"
         op_step = game_state.last_op_step
         mjai_type = mjai_action['type']        
+        # game_state.player_scores
         
         if self.st.ai_randomize_choice:     # randomize choice
             mjai_action = self.randomize_action(mjai_action, gi) 
@@ -409,7 +470,7 @@ class Automation:
             LOGGER.error("No automation for unrecognized mjai type: %s", mjai_type)
             return False
         
-        delay = self.get_delay(mjai_action, gi, game_state.last_reaction_time)  # initial delay
+        delay = self.get_delay(mjai_action, gi, game_state)  # initial delay
         action_steps:list[ActionStep] = [ActionStepDelay(delay)]
         action_steps.extend(more_steps)
         pai = mjai_action.get('pai',"")  
@@ -423,6 +484,23 @@ class Automation:
         self._task.start_action_steps(action_steps, game_state)
         return True
     
+    def calculate_entropy(self, probabilities):
+        # 确保概率列表的总和小于1
+        total_probability =sum([v for k,v in probabilities])
+        if total_probability > 1:
+            LOGGER.error("Probabilities sum must be less than or equal to 1: %d", total_probability)
+            return 0
+        # 计算剩余概率
+        remaining_probability = 1 - total_probability
+
+        # 计算熵
+        entropy = -sum(v * math.log2(v) for k,v in probabilities if v > 0)
+        # 如果剩余概率大于0，则加上剩余概率的熵
+        if remaining_probability > 0:
+            entropy -= remaining_probability * math.log2(remaining_probability)
+
+        return entropy
+    
     def randomize_action(self, action:dict, gi:GameInfo) -> dict:
         """ Randomize ai choice: pick according to probaility from top 3 options"""
         n = self.st.ai_randomize_choice     # randomize strength. 0 = no random, 5 = according to probability
@@ -433,7 +511,7 @@ class Automation:
             orig_pai = action['pai']
             options:dict = action['meta_options']            # e.g. {'1m':0.95, 'P':0.045, 'N':0.005, ...}
             # get dahai options (tile only) from top 3
-            top_ops:list = [(k,v) for k,v in options[:3] if k in MJAI_TILES_SORTED]        
+            top_ops:list = [(k,v) for k,v in options[:5] if k in MJAI_TILES_SORTED]        
             #pick from top3 according to probability
             power = 1 / (0.2 * n)
             sum_probs = sum([v**power for k,v in top_ops])
@@ -466,7 +544,8 @@ class Automation:
                 'type': MjaiType.DAHAI,
                 'actor': action['actor'],
                 'pai': chosen_pai,
-                'tsumogiri': tsumogiri
+                'tsumogiri': tsumogiri,
+                'entropy': self.calculate_entropy(top_ops)
             }
             msg = f"Randomized dahai: {change_str} ([{n}] {orig_prob*100:.1f}% -> {prob*100:.1f}%)"
             LOGGER.debug(msg)
@@ -496,6 +575,7 @@ class Automation:
         if pend_action is None:
             return
         LOGGER.info("Retry automating pending reaction: %s", pend_action['type'])
+        # // add tutch 
         self.automate_action(pend_action, game_state)        
                 
     

@@ -216,7 +216,7 @@ class SettingsWindow(tk.Toplevel):
         _label = ttk.Label(main_frame, text=self.st.lan().RANDOM_CHOICE)
         _label.grid(row=cur_row, column=0, **args_label)
         self.randomized_choice_var = tk.StringVar(value=self.st.ai_randomize_choice)
-        options = ['0 (Off)',1,2,3,4,5]
+        options = ['0 (Off)',1,2,3,4,5,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
         random_choice_entry = ttk.Combobox(
             main_frame, textvariable=self.randomized_choice_var, values=options, state="readonly", width=std_wid)
         random_choice_entry.grid(row=cur_row, column=1, **args_entry)
@@ -240,6 +240,16 @@ class SettingsWindow(tk.Toplevel):
         self.delay_random_upper_var = tk.DoubleVar(value=self.st.delay_random_upper)
         delay_upper_entry = tk.Entry(main_frame, textvariable= self.delay_random_upper_var,width=std_wid)
         delay_upper_entry.grid(row=cur_row, column=2, **args_entry)
+
+        # More human like
+        cur_row += 1       
+        _label = ttk.Label(main_frame, text=self.st.lan().AUTOMATIC_THOUGHT_STOP)
+        _label.grid(row=cur_row, column=0, **args_label)
+        self.random_think_choice_var = tk.StringVar(value=self.st.random_think_time_choice)
+        options = ['0 (Off)',1,2,3,4,5,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+        random_choice_entry = ttk.Combobox( 
+            main_frame, textvariable=self.random_think_choice_var, values=options, state="readonly", width=std_wid)
+        random_choice_entry.grid(row=cur_row, column=1, **args_entry)
         
         # tips :Settings
         cur_row += 1
@@ -311,6 +321,7 @@ class SettingsWindow(tk.Toplevel):
         
         # auto play settings
         randomized_choice_new:int = int(self.randomized_choice_var.get().split(' ')[0])
+        random_think_time_choice_new:int = int(self.random_think_choice_var.get().split(' ')[0])
         reply_emoji_new:float = int(self.reply_emoji_var.get().split('%')[0])/100
         try:
             delay_lower_new = self.delay_random_lower_var.get()
@@ -346,6 +357,7 @@ class SettingsWindow(tk.Toplevel):
         self.st.auto_dahai_drag = self.auto_drag_dahai_var.get()
         self.st.auto_random_move = self.random_move_var.get()
         self.st.ai_randomize_choice = randomized_choice_new
+        self.st.random_think_time_choice = random_think_time_choice_new
         self.st.auto_reply_emoji_rate = reply_emoji_new        
         self.st.delay_random_lower = delay_lower_new
         self.st.delay_random_upper = delay_upper_new

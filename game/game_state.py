@@ -81,6 +81,7 @@ class GameState:
         self.is_bot_calculating:bool = False    # if bot is calculating reaction
         self.is_ms_syncing:bool = False         # if mjai_bot is running syncing from MS (after disconnection)
         self.is_round_started:bool = False
+        self.is_new_round:bool = False
         """ if any new round has started (so game info is available)"""
         self.is_game_ended:bool = False         # if game has ended    
              
@@ -333,6 +334,7 @@ class GameState:
             self.mjai_pending_input_msgs.append(tsumo_msg)
         
         self.is_round_started = True
+        self.is_new_round = True
         return self._react_all(liqi_data_data)
     
     def ms_action_prototype(self, liqi_data:dict) -> dict:
