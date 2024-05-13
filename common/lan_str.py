@@ -77,6 +77,7 @@ class LanStr:
     GAME_ERROR = "Game Error!"
     SYNCING = "Syncing..."
     CALCULATING = "Calculating..."
+    PRETEND_THINKING = "Pretend to be thinking..."
     READY_FOR_GAME = "Ready"
     GAME_STARTING = "Game Starting"
     KYOKU = "Kyoku"
@@ -199,7 +200,7 @@ class LanStrZHS(LanStr):
     REPLY_EMOJI_CHANCE = "回复表情概率"
     
     RANDOM_DELAY_RANGE = "基础延迟随机范围(秒)"
-    AUTOMATIC_THOUGHT_STOP = "复杂情况随机停顿总时长（秒/局）"
+    AUTOMATIC_THOUGHT_STOP = "复杂情况停顿（秒）"
     GAME_LEVELS = ["铜之间", "银之间", "金之间", "玉之间", "王座之间"]
     GAME_MODES = ["四人东","四人南","三人东","三人南"]
     MOUSE_RANDOM_MOVE = "鼠标移动随机化"
@@ -213,6 +214,7 @@ class LanStrZHS(LanStr):
     GAME_ERROR = "对局发生错误!"    
     SYNCING = "同步中…"
     CALCULATING = "计算中…"
+    PRETEND_THINKING = "假装在思考…"
     READY_FOR_GAME = "等待游戏"
     GAME_STARTING = "准备开始"
     KYOKU = "局"

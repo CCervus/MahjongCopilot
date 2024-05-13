@@ -338,8 +338,8 @@ class Automation:
         elif game_state.game_mode == GameMode.MJ4P:
             max_rank = 4
         # 计算自家与其他家的分数差距
-        scores = game_state.player_scores
-        differences = [score - scores[game_state.seat] for score in scores if score != scores[game_state.seat]]
+        scores = [score for score in game_state.player_scores if score != 0]
+        differences = [score - game_state.player_scores[game_state.seat] for score in scores if score != scores[game_state.seat]]
 
         # 确定自家的顺位（排名）
         rank = sum(difference < 0 for difference in differences) + 1
@@ -909,7 +909,7 @@ class Automation:
                 LOGGER.debug("Visual sees main menu with diff %.1f", diff)
                 self.ui_state = UiState.MAIN_MENU
                 break
-            yield ActionStepDelay(random.uniform(0.5, 1))
+            yield ActionStepDelay(random.uniform(50, 400))
         
         # click on Ranked Mode
         x,y = Positions.MENUS[0]
