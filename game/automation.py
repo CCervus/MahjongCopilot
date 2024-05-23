@@ -391,9 +391,9 @@ class Automation:
 
             if game_state:
                 entropy = mjai_action['entropy']
-                trans_entropy = self.get_logistic_trans(entropy, 3, 1.4, 1.45)
-                trans_reach = self.get_logistic_trans(1 + gi.n_other_reach(), 1.4, 1.6, 0.427)
                 if not (pai in MJAI_TILES_19 or pai == gi.my_tsumohai) and mjai_action and entropy > 1.2 and self.long_think_time_ > 0:
+                    trans_entropy = self.get_logistic_trans(entropy, 3, 1.4, 1.45)
+                    trans_reach = self.get_logistic_trans(1 + gi.n_other_reach(), 1.4, 1.6, 0.427)
                     long_extra_time += trans_entropy * self.pressure_ * random.choice([0.5,0.75, 1, 1.5]) * trans_reach * self.st.random_think_time_choice / 5
 
                     LOGGER.info("--- LONG THINK TIME : %f last long_think : %d ---", long_extra_time, self.long_think_time_)
@@ -414,6 +414,8 @@ class Automation:
             extra_time = min(extra_time, 3.0)   # cap extra time
             delay += extra_time
                                 
+        elif mjai_type == MjaiType.REACH:
+            return 0
         elif mjai_type == MjaiType.REACH:
             delay += 1.0
         elif mjai_type == MjaiType.HORA:
