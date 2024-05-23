@@ -365,9 +365,11 @@ class Automation:
     def get_delay(self, mjai_action:dict, gi:GameInfo, game_state:GameState=None):
         """ return the action initial delay based on action type and game info"""
         subtract = 0
+        delay = 0
         if game_state:
             subtract = game_state.last_reaction_time
             if game_state.is_new_round:
+                delay += 2.5
                 game_state.is_new_round = False
                 self.long_think_time_ = self.st.random_think_time_choice
 
@@ -378,11 +380,9 @@ class Automation:
                 # game_state.player_scores
 
         mjai_type = mjai_action['type']
-        delay = random.uniform(self.st.delay_random_lower, self.st.delay_random_upper)    # base delay        
+        delay += random.uniform(self.st.delay_random_lower, self.st.delay_random_upper)    # base delay        
         if mjai_type == MjaiType.DAHAI:
             # extra time for first round and East
-            if gi.is_first_round and  gi.jikaze  == 'E':
-                delay += 4.5
                 
             extra_time:float = 0.0
             long_extra_time:float = 0.0
@@ -397,6 +397,7 @@ class Automation:
                     long_extra_time += trans_entropy * self.pressure_ * random.choice([0.5,0.75, 1, 1.5]) * trans_reach * self.st.random_think_time_choice / 5
 
                     LOGGER.info("--- LONG THINK TIME : %f last long_think : %d ---", long_extra_time, self.long_think_time_)
+                    LOGGER.info("--- entropy : %f trans_entropy : %f ---", entropy, trans_entropy)
 
                     long_extra_time = min(long_extra_time, self.long_think_time_)
 
@@ -600,7 +601,7 @@ class Automation:
         
         idx = random.randint(0, 8)
         x,y = Positions.EMOJI_BUTTON
-        steps = [ActionStepDelay(random.uniform(1.5, 3.0)), ActionStepMove(x*self.scaler, y*self.scaler)]
+        steps = [ActionStepDelay(random.uniform(2.5, 5.0)), ActionStepMove(x*self.scaler, y*self.scaler)]
         steps.append(ActionStepDelay(random.uniform(0.1, 0.2)))
         steps.append(ActionStepClick())
         x,y = Positions.EMOJIS[idx]
@@ -916,7 +917,7 @@ class Automation:
                 LOGGER.debug("Visual sees main menu with diff %.1f", diff)
                 self.ui_state = UiState.MAIN_MENU
                 break
-            yield ActionStepDelay(random.uniform(50, 400))
+            yield ActionStepDelay(random.uniform(0.5, 1))
         
         # click on Ranked Mode
         x,y = Positions.MENUS[0]
